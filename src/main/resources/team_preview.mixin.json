@@ -2,10 +2,10 @@
   "required": true,
   "package": "com.cobblemon.saultsc.team_preview.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [],
-  "client": [
-    "client.ui.BattlePreviewMixin"
+  "mixins": [
+    "common.BattlePreviewMixin"
   ],
+  "client": [],
   "injectors": {
     "defaultRequire": 1
   }

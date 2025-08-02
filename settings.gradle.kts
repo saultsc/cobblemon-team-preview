@@ -1,4 +1,4 @@
-rootProject.name = "Fabric" //By default, this is how your built jar is called
+rootProject.name = "team_preview" //By default, this is how your built jar is called
 
 pluginManagement {
     repositories {

@@ -32,7 +32,7 @@ The mod must be installed on **both** the server and the clients.
 
 Get the jar for your loader from [Modrinth](https://modrinth.com/mod/cobblemon-team-preview/versions) and place it in your `mods` folder.
 
-What changed in each version is listed in [changelogs](/changelogs).
+What changed in the current version is listed in [CHANGELOG.md](/CHANGELOG.md); older versions are kept in [changelogs](/changelogs).
 
 ## Building
 

@@ -1,3 +1,4 @@
+# Changelog
 ## [1.1.0 (October 9th, 2026)](#1-1-0)
 
 ### Additions

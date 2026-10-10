@@ -39,7 +39,7 @@ The mod must be installed on **both** the server and the clients.
 ## 📦 Installation
 
 1. Install [Cobblemon](https://cobblemon.com) and its dependencies for your loader.
-2. Download the jar for your platform (`battle_showdown-fabric-*.jar` or `battle_showdown-neoforge-*.jar`).
+2. Download the jar for your platform (`cobblemon-team-preview-fabric-*.jar` or `cobblemon-team-preview-neoforge-*.jar`).
 3. Place it in your `mods` folder.
 
 ## 🔧 Building

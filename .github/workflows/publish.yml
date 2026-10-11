@@ -68,7 +68,7 @@ jobs:
                 primary_file: "file"
               }')
 
-            curl -v --fail-with-body \
+            curl -sS --fail-with-body \
               -X POST "https://api.modrinth.com/v2/version" \
               -H "Authorization: ${MODRINTH_TOKEN}" \
               -H "User-Agent: ${GITHUB_REPOSITORY}/${TAG} (git@accieo.com)" \
@@ -98,7 +98,7 @@ jobs:
                 isMarkedForManualRelease: false
               }')
 
-            curl -v --fail-with-body \
+            curl -sS --fail-with-body \
               -X POST "https://minecraft.curseforge.com/api/projects/${CURSEFORGE_PROJECT_ID}/upload-file" \
               -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
               -F "metadata=${METADATA};type=application/json" \

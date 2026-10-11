@@ -3,19 +3,21 @@
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg?style=flat-square)](https://opensource.org/licenses/MPL-2.0)
 [![modrinth-badge](https://img.shields.io/modrinth/dt/cobblemon-team-preview?label=Modrinth&logo=Modrinth&style=flat-square)](https://modrinth.com/mod/cobblemon-team-preview/versions)
 
-![cobblemon-team-preview-icon](/common/src/main/resources/assets/battle_showdown/icon.png)
+![cobblemon-team-preview-icon](https://cdn.modrinth.com/data/jjp3jo0b/c1480dd663871d73d341aa10f55a60c0871183b2.png)
 
-Cobblemon: Team Preview is a Cobblemon addon that adds **team preview formats** to PvP battles: before the battle starts, both players see each other's team and choose which Pokémon they bring and in which order.
+![cobblemon-team-preview-banner](https://cdn.modrinth.com/data/cached_images/3d822a28e59c8ae9e0cabb3e37df09d242576665.png)
 
-## Features
+Choose your lead Pokémon before the battle begins.
 
-- **Singles Preview**: you bring your whole team and choose its order. The first Pokémon you pick leads.
-- **Doubles Preview** (VGC style): bring 6, pick 4. The first 2 you pick lead, the other 2 stay in the back.
-- **Ordered selection**: click your Pokémon in the order you want them and confirm to lock the selection.
-- **Timers**: 60 seconds to choose. If the time runs out, the missing picks are filled in with your team order.
-- **Hidden information**: the rival only sees species, level, HP and status.
+Cobblemon Team Preview adds a pre-battle selection screen for single battles. Once both players accept a battle challenge, each trainer can review their team and select the Pokémon to send out.
 
-Both formats show up in Cobblemon's challenge screen, right after the normal Singles and Doubles. The normal Cobblemon battles are untouched and start without a preview.
+# Showcase
+
+| Asset | Preview |
+| ---- | ------- |
+| Singles request | ![singles-preview](https://cdn.modrinth.com/data/cached_images/6205e10696f586c48f43148660f2f6475126ab02.png) |
+| Doubles request | ![doubles-preview](https://cdn.modrinth.com/data/cached_images/c1d7b54447a653718a64c544eff8a863a580a2c0.png) |
+| Preview UI | ![battle-preview-ui](https://cdn.modrinth.com/data/cached_images/c8b1c930dc0fd4f924a18bec4e93c9d78b82e585.png) |
 
 ## Requirements
 

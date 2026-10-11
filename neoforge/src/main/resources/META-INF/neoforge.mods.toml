@@ -6,7 +6,7 @@ license = "MPL-2.0"
 [[mods]]
 modId = "${mod_id}"
 version = "${version}"
-displayName = "Cobblemon: Battle Showdown"
+displayName = "Cobblemon: Team Preview"
 authors = "saultsc"
 description = '''
 Adds a team preview before PvP battles: see your rival's team and pick your lead Pokémon.

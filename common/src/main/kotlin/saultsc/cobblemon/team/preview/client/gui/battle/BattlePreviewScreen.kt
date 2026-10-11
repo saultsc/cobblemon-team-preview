@@ -1,0 +1,294 @@
+package saultsc.cobblemon.team.preview.client.gui.battle
+
+import com.cobblemon.mod.common.api.gui.blitk
+import com.cobblemon.mod.common.client.render.drawScaledText
+import com.cobblemon.mod.common.util.cobblemonResource
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
+import org.lwjgl.glfw.GLFW
+import saultsc.cobblemon.team.preview.TeamPreview
+import saultsc.cobblemon.team.preview.battle.BattlePreviewManager
+import saultsc.cobblemon.team.preview.battle.PreviewFormat
+import saultsc.cobblemon.team.preview.battle.PreviewPokemon
+import saultsc.cobblemon.team.preview.battle.TeamSelection
+import saultsc.cobblemon.team.preview.network.packets.c2s.TeamSelectionPacket
+import saultsc.cobblemon.team.preview.network.packets.s2c.BattleTimerUpdatePacket
+import saultsc.cobblemon.team.preview.network.packets.s2c.BattleTimerUpdatePacket.TimerPhase
+import java.util.UUID
+
+/**
+ * Team preview shown to both players before a PvP battle starts.
+ *
+ * The player's team is on the left: clicking Pokémon picks them in order, and each picked one shows its position.
+ * The rival's team is on the right. The selection is locked with the confirm button.
+ */
+class BattlePreviewScreen(
+    private val battleId: UUID,
+    private val format: PreviewFormat,
+    private val opponentTeam: List<PreviewPokemon>,
+    private val opponentName: String,
+    private val playerTeam: List<PreviewPokemon>,
+    private val playerName: String
+) : Screen(Component.translatable(format.translationKey)) {
+
+    companion object {
+        const val SLOT_HORIZONTAL_SPACING = 4F
+        const val SLOT_VERTICAL_SPACING = 2F
+        const val TEAM_SIDE_MARGIN = 20
+        const val BACKGROUND_HEIGHT = 148
+        const val PARTY_SIZE = 6
+        val underlayTexture = cobblemonResource("textures/gui/battle/selection_underlay.png")
+    }
+
+    private lateinit var rivalTeamDisplay: RivalTeamDisplay
+    private lateinit var playerTeamSelector: PlayerTeamSelector
+    private lateinit var confirmButton: ConfirmButton
+    private var backgroundY: Int = 0
+
+    private var selectionTimeRemaining: Int = format.selectionSeconds
+    private var preStartTimeRemaining: Int = BattlePreviewManager.PRE_START_TIME_LIMIT
+    private var currentPhase: TimerPhase = TimerPhase.SELECTION
+
+    private val selectable: List<Boolean> = playerTeam.map { !it.isFainted }
+    private val maxSelections: Int = TeamSelection.maxSelections(format, selectable)
+
+    /** Team indices in the order they were picked. Kept here so it survives [init] being called again on resize. */
+    private val selectedOrder = mutableListOf<Int>()
+    private var confirmed: Boolean = false
+
+    private val canEdit: Boolean
+        get() = currentPhase == TimerPhase.SELECTION && !confirmed
+
+    private val canPickMore: Boolean
+        get() = selectedOrder.size < maxSelections
+
+    override fun shouldCloseOnEsc() = false
+
+    override fun isPauseScreen() = false
+
+    override fun init() {
+        super.init()
+        backgroundY = if (height > 304) (height / 2) - (BACKGROUND_HEIGHT / 2)
+        else height - (BACKGROUND_HEIGHT + 78)
+
+        rivalTeamDisplay = RivalTeamDisplay(opponentTeam, ::getRivalSlotPosition)
+        rivalTeamDisplay.init()
+
+        playerTeamSelector = PlayerTeamSelector(
+            playerTeam = playerTeam,
+            getSlotPosition = ::getPlayerSlotPosition,
+            selectedOrder = { selectedOrder },
+            leadCount = format.leadCount,
+            canEdit = { canEdit },
+            canPickMore = { canPickMore },
+            dimUnselected = { format.bringsOnlySelected && !(canEdit && canPickMore) },
+            onToggle = ::onPokemonToggled
+        )
+        playerTeamSelector.init()
+
+        confirmButton = addRenderableWidget(
+            ConfirmButton(
+                x = (width - ConfirmButton.WIDTH) / 2,
+                y = backgroundY + BACKGROUND_HEIGHT + 4,
+                text = Component.translatable("${TeamPreview.MOD_ID}.ui.confirm")
+            ) { onConfirm() }
+        )
+        updateConfirmButton()
+    }
+
+    private fun onPokemonToggled(index: Int) {
+        if (!canEdit) return
+        if (!selectedOrder.remove(index)) {
+            if (!canPickMore || !selectable[index]) return
+            selectedOrder.add(index)
+        }
+        sendSelection()
+    }
+
+    private fun onConfirm() {
+        if (!canEdit || !TeamSelection.canConfirm(selectedOrder, selectable, format)) return
+        confirmed = true
+        sendSelection()
+    }
+
+    private fun sendSelection() {
+        TeamPreview.networkManager.sendToServer(TeamSelectionPacket(battleId, selectedOrder.toList(), confirmed))
+    }
+
+    private fun updateConfirmButton() {
+        confirmButton.visible = canEdit
+        confirmButton.active = canEdit && TeamSelection.canConfirm(selectedOrder, selectable, format)
+    }
+
+    fun updateTimer(timerUpdate: BattleTimerUpdatePacket) {
+        if (battleId != timerUpdate.battleId) return
+
+        selectionTimeRemaining = timerUpdate.selectionTimeRemaining
+        preStartTimeRemaining = timerUpdate.preStartTimeRemaining
+        currentPhase = timerUpdate.phase
+
+        // The time ran out before confirming: show the team the server completed for us.
+        if (currentPhase == TimerPhase.PRE_START && !confirmed) {
+            val completed = TeamSelection.resolveOrder(selectedOrder, selectable, format)
+            selectedOrder.clear()
+            selectedOrder.addAll(completed.filter { selectable[it] })
+            confirmed = true
+        }
+
+        if (currentPhase == TimerPhase.FINISHED) {
+            onClose()
+        }
+    }
+
+    private fun formatTime(seconds: Int): String = "%d:%02d".format(seconds / 60, seconds % 60)
+
+    private val playerTeamWidth: Float
+        get() = (PlayerTeamSelector.PlayerTeamTile.TILE_WIDTH * 2) + SLOT_HORIZONTAL_SPACING
+
+    private val rivalTeamWidth: Float
+        get() = (RivalTeamDisplay.TeamPreviewTile.TILE_WIDTH * 2) + SLOT_HORIZONTAL_SPACING
+
+    private val playerTeamStartX: Float
+        get() = (width / 2F) - playerTeamWidth - TEAM_SIDE_MARGIN
+
+    private val rivalTeamStartX: Float
+        get() = (width / 2F) + TEAM_SIDE_MARGIN
+
+    private fun getPlayerSlotPosition(index: Int): Pair<Float, Float> = getSlotPosition(
+        startX = playerTeamStartX,
+        index = index,
+        tileWidth = PlayerTeamSelector.PlayerTeamTile.TILE_WIDTH,
+        tileHeight = PlayerTeamSelector.PlayerTeamTile.TILE_HEIGHT
+    )
+
+    private fun getRivalSlotPosition(index: Int): Pair<Float, Float> = getSlotPosition(
+        startX = rivalTeamStartX,
+        index = index,
+        tileWidth = RivalTeamDisplay.TeamPreviewTile.TILE_WIDTH,
+        tileHeight = RivalTeamDisplay.TeamPreviewTile.TILE_HEIGHT
+    )
+
+    private fun getSlotPosition(startX: Float, index: Int, tileWidth: Int, tileHeight: Int): Pair<Float, Float> {
+        val startY = backgroundY + 34F
+        val row = index / 2
+        val column = index % 2
+        val slotX = startX + column * (SLOT_HORIZONTAL_SPACING + tileWidth)
+        val slotY = startY + row * (SLOT_VERTICAL_SPACING + tileHeight)
+        return slotX to slotY
+    }
+
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        updateConfirmButton()
+        super.render(context, mouseX, mouseY, delta)
+        val matrixStack = context.pose()
+
+        blitk(
+            matrixStack = matrixStack,
+            texture = underlayTexture,
+            x = 0,
+            y = backgroundY,
+            width = width,
+            height = BACKGROUND_HEIGHT
+        )
+
+        renderCenteredText(context, Component.translatable(format.translationKey).withStyle(ChatFormatting.GOLD), backgroundY + 5F)
+
+        // Player team (left)
+        renderTeamTitle(context, Component.translatable("${TeamPreview.MOD_ID}.ui.party", playerName), playerTeamStartX, playerTeamWidth)
+        for (i in 0 until PARTY_SIZE) {
+            val (playerX, playerY) = getPlayerSlotPosition(i)
+            renderEmptySlot(context, playerX, playerY, PlayerTeamSelector.PlayerTeamTile.TILE_WIDTH, PlayerTeamSelector.PlayerTeamTile.TILE_HEIGHT)
+        }
+
+        // Rival team (right)
+        renderTeamTitle(context, Component.translatable("${TeamPreview.MOD_ID}.ui.party", opponentName), rivalTeamStartX, rivalTeamWidth)
+        for (i in 0 until PARTY_SIZE) {
+            val (rivalX, rivalY) = getRivalSlotPosition(i)
+            renderEmptySlot(context, rivalX, rivalY, RivalTeamDisplay.TeamPreviewTile.TILE_WIDTH, RivalTeamDisplay.TeamPreviewTile.TILE_HEIGHT)
+        }
+
+        playerTeamSelector.render(context, mouseX, mouseY, delta)
+        rivalTeamDisplay.render(context, delta)
+
+        renderStatus(context)
+    }
+
+    private fun renderTeamTitle(context: GuiGraphics, title: MutableComponent, teamStartX: Float, teamWidth: Float) {
+        drawScaledText(
+            context = context,
+            text = title,
+            x = teamStartX + (teamWidth / 2) - (font.width(title) / 2F),
+            y = backgroundY + 17F,
+            shadow = true
+        )
+    }
+
+    private fun renderEmptySlot(context: GuiGraphics, x: Float, y: Float, tileWidth: Int, tileHeight: Int) {
+        blitk(
+            matrixStack = context.pose(),
+            texture = PlayerTeamSelector.PlayerTeamTile.tileDisabledTexture,
+            x = x,
+            y = y,
+            width = tileWidth,
+            height = tileHeight,
+            vOffset = tileHeight,
+            textureHeight = tileHeight * 2
+        )
+    }
+
+    /** Instruction line inside the panel and the timer below the confirm button. */
+    private fun renderStatus(context: GuiGraphics) {
+        val instructionY = backgroundY + 138F
+        val timerDisplayY = backgroundY + BACKGROUND_HEIGHT + ConfirmButton.HEIGHT + 8F
+
+        when (currentPhase) {
+            TimerPhase.SELECTION -> {
+                val instructionText = if (confirmed) {
+                    Component.translatable("${TeamPreview.MOD_ID}.ui.waiting_for_rival").withStyle(ChatFormatting.YELLOW)
+                } else {
+                    Component.literal("${selectedOrder.size}/$maxSelections")
+                        .withStyle(ChatFormatting.WHITE)
+                }
+                renderCenteredText(context, instructionText, instructionY)
+
+                val timeLabel = Component.translatable("${TeamPreview.MOD_ID}.ui.time_remaining").withStyle(ChatFormatting.GRAY)
+                renderCenteredText(context, timeLabel, timerDisplayY)
+
+                val timerText = Component.literal(formatTime(selectionTimeRemaining))
+                    .withStyle(if (selectionTimeRemaining <= 10) ChatFormatting.RED else ChatFormatting.WHITE)
+                renderCenteredText(context, timerText, timerDisplayY + 12F)
+            }
+
+            TimerPhase.PRE_START -> {
+                val startLabel = Component.translatable("${TeamPreview.MOD_ID}.ui.starting_in").withStyle(ChatFormatting.GREEN)
+                renderCenteredText(context, startLabel, timerDisplayY)
+
+                val timerText = Component.literal(formatTime(preStartTimeRemaining)).withStyle(ChatFormatting.GREEN)
+                renderCenteredText(context, timerText, timerDisplayY + 12F)
+            }
+
+            // The screen closes itself as soon as the session finishes.
+            TimerPhase.FINISHED -> Unit
+        }
+    }
+
+    private fun renderCenteredText(context: GuiGraphics, text: MutableComponent, y: Float) {
+        drawScaledText(
+            context = context,
+            text = text,
+            x = (width / 2F) - (font.width(text) / 2F),
+            y = y,
+            shadow = true
+        )
+    }
+
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && playerTeamSelector.mouseClicked(mouseX, mouseY)) {
+            return true
+        }
+        return super.mouseClicked(mouseX, mouseY, button)
+    }
+}

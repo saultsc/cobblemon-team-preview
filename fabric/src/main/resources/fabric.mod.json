@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "${mod_id}",
   "version": "${version}",
-  "name": "Cobblemon: Battle Showdown",
+  "name": "Cobblemon: Team Preview",
   "description": "Adds a team preview before PvP battles: see your rival's team and pick your lead Pokémon.",
   "authors": [
     "saultsc"
@@ -17,13 +17,13 @@
   "entrypoints": {
     "main": [
       {
-        "value": "saultsc.battle_showdown.fabric.BattleShowdownFabric",
+        "value": "saultsc.cobblemon.team.preview.fabric.TeamPreviewFabric",
         "adapter": "kotlin"
       }
     ],
     "client": [
       {
-        "value": "saultsc.battle_showdown.fabric.client.BattleShowdownFabricClient",
+        "value": "saultsc.cobblemon.team.preview.fabric.client.TeamPreviewFabricClient",
         "adapter": "kotlin"
       }
     ]

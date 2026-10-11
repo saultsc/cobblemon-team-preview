@@ -1,0 +1,6 @@
+package saultsc.cobblemon.team.preview
+
+object TeamPreviewBuildDetails {
+    const val MOD_ID = "{{ modid }}"
+    const val VERSION = "{{ version }}"
+}

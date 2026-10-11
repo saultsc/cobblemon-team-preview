@@ -1,0 +1,12 @@
+{
+  "cobblemon_team_preview.format.singles_preview": "Singles Preview",
+  "cobblemon_team_preview.format.doubles_preview": "Doubles Preview",
+  "cobblemon_team_preview.ui.party": "Equipo de %s",
+  "cobblemon_team_preview.ui.confirm": "Confirmar",
+  "cobblemon_team_preview.ui.waiting_for_rival": "Esperando al rival",
+  "cobblemon_team_preview.ui.time_remaining": "Tiempo restante",
+  "cobblemon_team_preview.ui.starting_in": "Empieza en",
+  "cobblemon_team_preview.preview.busy": "%s ya está preparando otro combate.",
+  "cobblemon_team_preview.preview.cancelled.disconnect": "Combate cancelado: %s se desconectó.",
+  "cobblemon_team_preview.preview.cancelled.death": "Combate cancelado: %s murió."
+}

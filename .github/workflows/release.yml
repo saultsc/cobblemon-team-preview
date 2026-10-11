@@ -22,13 +22,16 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
+      mc_version: ${{ steps.version.outputs.mc_version }}
       exists: ${{ steps.exists.outputs.exists }}
     steps:
       - uses: actions/checkout@v7
 
       - name: Read version
         id: version
-        run: echo "version=$(grep '^mod_version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "version=$(grep '^mod_version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          echo "mc_version=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
       - name: Check whether release exists
         id: exists
@@ -61,9 +64,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.check.outputs.version }}
+          MC_VERSION: ${{ needs.check.outputs.mc_version }}
         run: |
-          FABRIC="artifacts/fabric/build/libs/cobblemon-team-preview-fabric-${VERSION}.jar"
-          NEOFORGE="artifacts/neoforge/build/libs/cobblemon-team-preview-neoforge-${VERSION}.jar"
+          FABRIC="artifacts/cobblemon-team-preview-fabric-${VERSION}+${MC_VERSION}.jar"
+          NEOFORGE="artifacts/cobblemon-team-preview-neoforge-${VERSION}+${MC_VERSION}.jar"
           test -f "$FABRIC"
           test -f "$NEOFORGE"
 

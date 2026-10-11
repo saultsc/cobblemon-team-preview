@@ -34,6 +34,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: Artifacts
-          path: |
-            neoforge/build/libs/
-            fabric/build/libs/
+          path: build/libs/*.jar
+          if-no-files-found: error

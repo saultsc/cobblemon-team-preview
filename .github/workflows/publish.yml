@@ -32,10 +32,14 @@ jobs:
       CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
       CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
       COBBLEMON_PROJECT_ID: MdwFAVRL
-      GAME_VERSION: '1.21.1'
       TAG: ${{ inputs.tag }}
       STATUS: ${{ inputs.status }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+      - name: Read Minecraft version
+        run: echo "GAME_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_ENV"
       - name: Download release assets
         run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'cobblemon-team-preview-*.jar' --dir release
       - name: Publish to Modrinth
@@ -43,7 +47,7 @@ jobs:
           set -euo pipefail
 
           for LOADER in fabric neoforge; do
-            FILE="release/cobblemon-team-preview-${LOADER}-${TAG}.jar"
+            FILE=$(ls release/cobblemon-team-preview-"${LOADER}"-*.jar | head -n 1)
             test -f "$FILE"
 
             DATA=$(jq -n \
@@ -84,7 +88,7 @@ jobs:
               fabric) LOADER_NAME="Fabric" ;;
               neoforge) LOADER_NAME="NeoForge" ;;
             esac
-            FILE="release/cobblemon-team-preview-${LOADER}-${TAG}.jar"
+            FILE=$(ls release/cobblemon-team-preview-"${LOADER}"-*.jar | head -n 1)
             test -f "$FILE"
 
             METADATA=$(jq -n \

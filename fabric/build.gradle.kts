@@ -18,6 +18,25 @@ loom {
         useLegacyMixinAp.set(true)
         defaultRefmapName.set("mixins.${project.name}.refmap.json")
     }
+
+    // Two named clients for testing battles locally against each other
+    runs {
+        named("client") {
+            ideConfigGenerated(false)
+        }
+        create("client1") {
+            client()
+            configName = "Minecraft Client 1"
+            programArgs("--username=AshKetchum", "--uuid=93e4e551-589a-41cb-ab2d-435266c8e035")
+            ideConfigGenerated(true)
+        }
+        create("client2") {
+            client()
+            configName = "Minecraft Client 2"
+            programArgs("--username=GaryOak")
+            ideConfigGenerated(true)
+        }
+    }
 }
 val shadowCommon: Configuration = configurations.maybeCreate("shadowCommon")
 

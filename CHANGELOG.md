@@ -10,7 +10,7 @@
 - Added Spanish translation.
 
 ### Changes
-- Updated to Cobblemon 1.8.1, Kotlin 2.2.20, Fabric Loader 0.17.2 and NeoForge 21.1.182.
+- Updated to Cobblemon 1.8.2, Kotlin 2.2.20, Fabric Loader 0.17.2 and NeoForge 21.1.182.
 - Switched to Mojang mappings and the cobblemon-contenders build setup.
 - The preview only opens for the preview formats; normal battles start right away as in Cobblemon.
 - Selection time is now 60 seconds; when it runs out the selection is completed with the team order instead of cancelling.

@@ -24,7 +24,7 @@ The mod must be installed on **both** the server and the clients.
 | | Version |
 |---|---|
 | Minecraft | 1.21.1 |
-| Cobblemon | 1.8.1+ (below 1.9.0) |
+| Cobblemon | 1.8.2+ (below 1.9.0) |
 | Fabric Loader | 0.17.2+ with Fabric API and Fabric Language Kotlin |
 | NeoForge | 21.1.182+ with Kotlin for Forge |
 

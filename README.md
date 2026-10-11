@@ -3,7 +3,7 @@
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg?style=flat-square)](https://opensource.org/licenses/MPL-2.0)
 [![modrinth-badge](https://img.shields.io/modrinth/dt/cobblemon-team-preview?label=Modrinth&logo=Modrinth&style=flat-square)](https://modrinth.com/mod/cobblemon-team-preview/versions)
 
-![cobblemon-team-preview-icon](https://cdn.modrinth.com/data/jjp3jo0b/c1480dd663871d73d341aa10f55a60c0871183b2.png)
+![cobblemon-team-preview-icon](https://cdn.modrinth.com/data/jjp3jo0b/f2c3baa7e15fbdb9b07d4608449ef17c9fa46823.png)
 
 ![cobblemon-team-preview-banner](https://cdn.modrinth.com/data/cached_images/3d822a28e59c8ae9e0cabb3e37df09d242576665.png)
 

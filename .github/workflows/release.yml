@@ -1,0 +1,73 @@
+# Creates a GitHub release (tagged with mod_version) whenever mod_version is
+# bumped on main. If a release for that version already exists, nothing is
+# built or released.
+
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths: [gradle.properties]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      exists: ${{ steps.exists.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read version
+        id: version
+        run: echo "version=$(grep '^mod_version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether release exists
+        id: exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.exists == 'false'
+    uses: ./.github/workflows/build.yml
+
+  github-release:
+    needs: [check, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: Artifacts
+          path: artifacts
+
+      - name: create github release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          FABRIC="artifacts/fabric/build/libs/cobblemon-team-preview-fabric-${VERSION}.jar"
+          NEOFORGE="artifacts/neoforge/build/libs/cobblemon-team-preview-neoforge-${VERSION}.jar"
+          test -f "$FABRIC"
+          test -f "$NEOFORGE"
+
+          gh release create "$VERSION" "$FABRIC" "$NEOFORGE" \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --generate-notes

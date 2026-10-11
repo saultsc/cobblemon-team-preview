@@ -1,0 +1,106 @@
+# Manually publishes an existing GitHub release to Modrinth and CurseForge.
+# Run it from the Actions tab and enter the release tag (the mod_version,
+# e.g. 1.1.0).
+
+name: publish
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (mod_version, e.g. 1.1.0)'
+        required: true
+        type: string
+      status:
+        description: 'Modrinth version status'
+        required: true
+        type: choice
+        default: draft
+        options:
+          - draft
+          - unlisted
+          - listed
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+      MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+      CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+      CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+      COBBLEMON_PROJECT_ID: MdwFAVRL
+      GAME_VERSION: '1.21.1'
+      TAG: ${{ inputs.tag }}
+      STATUS: ${{ inputs.status }}
+    steps:
+      - name: Download release assets
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'cobblemon-team-preview-*.jar' --dir release
+      - name: Publish to Modrinth
+        run: |
+          set -euo pipefail
+
+          for LOADER in fabric neoforge; do
+            FILE="release/cobblemon-team-preview-${LOADER}-${TAG}.jar"
+            test -f "$FILE"
+
+            DATA=$(jq -n \
+              --arg name "Cobblemon: Team Preview ${TAG} ~ ${LOADER}" \
+              --arg version_number "${TAG}" \
+              --arg project_id "$MODRINTH_PROJECT_ID" \
+              --arg cobblemon "$COBBLEMON_PROJECT_ID" \
+              --arg game_version "$GAME_VERSION" \
+              --arg loader "$LOADER" \
+              --arg status "$STATUS" \
+              '{
+                name: $name,
+                version_number: $version_number,
+                project_id: $project_id,
+                dependencies: [{project_id: $cobblemon, dependency_type: "required"}],
+                game_versions: [$game_version],
+                version_type: "release",
+                loaders: [$loader],
+                featured: false,
+                status: $status,
+                file_parts: ["file"],
+                primary_file: "file"
+              }')
+
+            curl -v --fail-with-body \
+              -X POST "https://api.modrinth.com/v2/version" \
+              -H "Authorization: ${MODRINTH_TOKEN}" \
+              -H "User-Agent: ${GITHUB_REPOSITORY}/${TAG} (git@accieo.com)" \
+              -F "data=${DATA};type=application/json" \
+              -F "file=@${FILE};type=application/java-archive"
+          done
+      - name: Publish to CurseForge
+        run: |
+          set -euo pipefail
+
+          for LOADER in fabric neoforge; do
+            case "$LOADER" in
+              fabric) LOADER_NAME="Fabric" ;;
+              neoforge) LOADER_NAME="NeoForge" ;;
+            esac
+            FILE="release/cobblemon-team-preview-${LOADER}-${TAG}.jar"
+            test -f "$FILE"
+
+            METADATA=$(jq -n \
+              --arg displayName "$(basename "$FILE")" \
+              --arg loader "$LOADER_NAME" \
+              '{
+                changelog: "",
+                displayName: $displayName,
+                gameVersionNames: ["Client", "Server", "1.21.1", $loader],
+                releaseType: "release",
+                isMarkedForManualRelease: false
+              }')
+
+            curl -v --fail-with-body \
+              -X POST "https://minecraft.curseforge.com/api/projects/${CURSEFORGE_PROJECT_ID}/upload-file" \
+              -H "X-Api-Token: ${CURSEFORGE_TOKEN}" \
+              -F "metadata=${METADATA};type=application/json" \
+              -F "file=@${FILE};type=application/java-archive"
+          done

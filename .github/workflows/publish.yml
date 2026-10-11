@@ -32,17 +32,43 @@ jobs:
       CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
       CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
       COBBLEMON_PROJECT_ID: MdwFAVRL
-      TAG: ${{ inputs.tag }}
       STATUS: ${{ inputs.status }}
     steps:
+      - name: Resolve release tag
+        id: resolve_tag
+        run: |
+          set -euo pipefail
+
+          INPUT_TAG='${{ inputs.tag }}'
+          INPUT_TAG="${INPUT_TAG#refs/tags/}"
+          CANDIDATES=("$INPUT_TAG")
+          if [[ "$INPUT_TAG" == v* ]]; then
+            CANDIDATES+=("${INPUT_TAG#v}")
+          else
+            CANDIDATES+=("v$INPUT_TAG")
+          fi
+
+          for CANDIDATE in "${CANDIDATES[@]}"; do
+            if gh release view "$CANDIDATE" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "tag=$CANDIDATE" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+
+          echo "::error::No release found for input '$INPUT_TAG'. Tried: ${CANDIDATES[*]}"
+          exit 1
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ steps.resolve_tag.outputs.tag }}
       - name: Read Minecraft version
         run: echo "GAME_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_ENV"
       - name: Download release assets
+        env:
+          TAG: ${{ steps.resolve_tag.outputs.tag }}
         run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'cobblemon-team-preview-*.jar' --dir release
       - name: Publish to Modrinth
+        env:
+          TAG: ${{ steps.resolve_tag.outputs.tag }}
         run: |
           set -euo pipefail
 
@@ -80,6 +106,8 @@ jobs:
               -F "file=@${FILE};type=application/java-archive"
           done
       - name: Publish to CurseForge
+        env:
+          TAG: ${{ steps.resolve_tag.outputs.tag }}
         run: |
           set -euo pipefail
 
